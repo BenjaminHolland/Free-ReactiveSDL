@@ -62,6 +62,7 @@ private:
         auto sub = eventStream
             .filter([](SDL_Event e) {return e.type == SDL_QUIT; })
             .subscribe([&](SDL_Event e) {this->continueEventStream = false; });
+        subs.push_back(std::move(sub));
     }
 
     void initMouseMotionHandler() {
