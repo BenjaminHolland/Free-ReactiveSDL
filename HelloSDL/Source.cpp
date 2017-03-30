@@ -22,16 +22,20 @@ const int SCREEN_HEIGHT = 300;
 class Program {
 private:
     
+    //members for tracking SDL resources.
     SDL_Window* window;
     SDL_Renderer* renderer;
 
+    //members for managing the event stream.
     bool continueEventStream = true;
     rx::connectable_observable<SDL_Event> eventStream;
     std::vector<rx::composite_subscription> subs;
-    
+
+    //members for managing the trail 
     static const size_t TRAIL_SIZE = 100;
     std::array<SDL_Point, TRAIL_SIZE> trail;
 
+    //Initialize SDL resources.
     void initSdlResources() {
         if (SDL_Init(SDL_INIT_VIDEO) < 0) {
             throw std::exception(SDL_GetError());
@@ -41,7 +45,8 @@ private:
         }
     }
     
-   
+    //Pumps events through the event pipeleine untill the queue is empty, then renders the frame.
+    //Stops when instructed to via setting continueEventStream to false.
     void eventStreamOnSubscribe(rx::subscriber<SDL_Event> head) {
         static SDL_Event e;
         while (this->continueEventStream) {
@@ -52,12 +57,14 @@ private:
         }
     }
 
+    //Copies the data from the given trail buffer into the current trail buffer.
     void storeTrail(std::vector<SDL_Point> trail) {
         for (int i = 0; i < trail.size(); i++) {
             this->trail[i] = trail.at(i);
         }
     }
 
+    //Sets up the handler for the quit event.
     void initQuitHandler() {
         auto sub = eventStream
             .filter([](SDL_Event e) {return e.type == SDL_QUIT; })
@@ -65,6 +72,7 @@ private:
         subs.push_back(std::move(sub));
     }
 
+    //Sets up the handler for the mouse motion event.
     void initMouseMotionHandler() {
         auto sub = eventStream
             .filter([](SDL_Event& e) {return e.type == SDL_MOUSEMOTION; })
@@ -74,6 +82,7 @@ private:
         subs.push_back(std::move(sub));
     }
 
+    //Create the event stream and prepare it for subscriptions.
     void initEventStream() {
         eventStream = rx::sources::create<SDL_Event>([&](rx::subscriber<SDL_Event> subscriber) {
             this->eventStreamOnSubscribe(subscriber);
@@ -81,6 +90,7 @@ private:
     }
    
 
+    //Render the trail.
     void onRender() {
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
         SDL_RenderClear(renderer);
@@ -89,6 +99,7 @@ private:
         SDL_RenderPresent(renderer);
     }
 
+    //Clean up the SDL resources we're using. 
     void freeSdlResources() {
         if (window != nullptr) {
             SDL_DestroyWindow(window);
@@ -97,8 +108,10 @@ private:
             SDL_DestroyRenderer(renderer);
         }
     }
+
 public:
     Program() {
+      
         initSdlResources();
         initEventStream();
         initMouseMotionHandler();
