@@ -77,7 +77,7 @@ private:
         auto sub = eventStream
             .filter([](SDL_Event& e) {return e.type == SDL_MOUSEMOTION; })
             .map([](SDL_Event e) {SDL_Point r = { e.motion.x,e.motion.y }; return r; })
-            .buffer(TRAIL_SIZE, 1)
+            .buffer((int)TRAIL_SIZE, 1)
             .subscribe([&](std::vector<SDL_Point> trail) {this->storeTrail(trail); });
         subs.push_back(std::move(sub));
     }
